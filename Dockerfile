@@ -15,12 +15,12 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
   && uv python install 3.12
 
 # Install libtorch
-# ENV LIBTORCH_BYPASS_VERSION_CHECK=1
 ENV LIBTORCH=/app/libtorch
 ENV LIBTORCH_INCLUDE=/app/libtorch
 ENV LIBTORCH_LIB=/app/libtorch
-ENV LD_LIBRARY_PATH=/path/to/libtorch/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/app/libtorch/lib:$LD_LIBRARY_PATH
 
+# For CPU
 RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.0%2Bcpu.zip \
   && unzip libtorch-cxx11-abi-shared-with-deps-2.5.0+cpu.zip \
   && rm libtorch-cxx11-abi-shared-with-deps-2.5.0+cpu.zip
