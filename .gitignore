@@ -1,0 +1,6 @@
+.venv
+__pycache__
+.mise.toml
+model.pt
+
+target
