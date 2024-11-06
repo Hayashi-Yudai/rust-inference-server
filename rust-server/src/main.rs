@@ -16,12 +16,14 @@ async fn ping() -> impl Responder {
 #[post("/json")]
 async fn json_post(item: web::Json<ResponseObj>) -> impl Responder {
     let output_value = predict_by_torch_model().unwrap();
-    format!("{} {:?}", item.message, output_value)
+    format!("{} {:?}\n", item.message, output_value)
 }
 
 fn predict_by_torch_model() -> Result<Vec<Vec<f64>>, Box<dyn std::error::Error>> {
-    let model = tch::CModule::load_on_device("/app/src/python-model/src/model.pt", Device::Cpu)?;
-    let input_tensor = Tensor::randn(&[1, 10], (tch::Kind::Float, Device::Cpu));
+    let device = Device::cuda_if_available();
+    println!("Device: {:?}", device);
+    let model = tch::CModule::load_on_device("/app/src/python-model/src/model.pt", device)?;
+    let input_tensor = Tensor::randn(&[1, 10], (tch::Kind::Float, device));
     let input_ivalue = IValue::Tensor(input_tensor);
     let output_tensor = no_grad(|| model.forward_is(&[input_ivalue])).unwrap();
 
