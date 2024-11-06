@@ -33,11 +33,19 @@
 //         .await
 // }
 
-use tch::Device;
-use tch::TrainableCModule;
-use tch::nn::VarStore;
+use tch::{Device, Tensor, no_grad, IValue};
 
-fn main() {
-    let vs = VarStore::new(Device::Cpu);
-    let model = TrainableCModule::load("../python-model/src/model.pt", vs.root());
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let model = tch::CModule::load_on_device("/app/src/python-model/src/model.pt", Device::Cpu)?;
+    let input_tensor = Tensor::randn(&[1, 10], (tch::Kind::Float, Device::Cpu));
+    let input_ivalue = IValue::Tensor(input_tensor);
+    let output_tensor = no_grad(|| model.forward_is(&[input_ivalue])).unwrap();
+
+    println!("Output: ");
+    match output_tensor {
+        IValue::Tensor(t) => t.print(),
+        _ => println!("Output is not a tensor: {:?}", output_tensor),
+    }
+    Ok(())
 }

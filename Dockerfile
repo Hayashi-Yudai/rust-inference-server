@@ -19,6 +19,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 ENV LIBTORCH=/app/libtorch
 ENV LIBTORCH_INCLUDE=/app/libtorch
 ENV LIBTORCH_LIB=/app/libtorch
-RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-2.5.0%2Bcpu.zip \
-  && unzip libtorch-shared-with-deps-2.5.0+cpu.zip \
-  && rm libtorch-shared-with-deps-2.5.0+cpu.zip
+ENV LD_LIBRARY_PATH=/path/to/libtorch/lib:$LD_LIBRARY_PATH
+
+RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.0%2Bcpu.zip \
+  && unzip libtorch-cxx11-abi-shared-with-deps-2.5.0+cpu.zip \
+  && rm libtorch-cxx11-abi-shared-with-deps-2.5.0+cpu.zip
