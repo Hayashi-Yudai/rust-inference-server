@@ -1,6 +1,7 @@
 .venv
 __pycache__
 .mise.toml
-model.pt
+*.pt
+*.csv
 
 target
