@@ -5,7 +5,7 @@ use tch::{no_grad, Device, IValue, Tensor};
 #[derive(Serialize, Deserialize)]
 struct ResponseObj {
     message: String,
-    status_code: i32,
+    probability: f64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,7 +27,18 @@ async fn ping() -> impl Responder {
 async fn predict_titanic_survival(item: web::Json<TitanicInputData>) -> impl Responder {
     let input_value = preprocess_input_date(item.into_inner());
     let output_value = predict_by_torch_model(input_value).unwrap();
-    format!("{:?}\n", output_value)
+
+    if output_value[0][0] >= 0.5 {
+        return web::Json(ResponseObj {
+            message: "Died".to_string(),
+            probability: output_value[0][0],
+        });
+    } else {
+        return web::Json(ResponseObj {
+            message: "Survived".to_string(),
+            probability: output_value[0][1],
+        });
+    }
 }
 
 fn preprocess_input_date(item: TitanicInputData) -> Vec<Vec<f64>> {
@@ -60,7 +71,10 @@ fn predict_by_torch_model(input: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Box<dyn
     let device = Device::cuda_if_available();
     println!("Device: {:?}", device);
     let model = tch::CModule::load_on_device("/app/src/python-model/model.pt", device)?;
-    let input_tensor = Tensor::from_slice(&input[0]);
+
+    let flatten_input: Vec<f64> = input.into_iter().flatten().collect();
+    let input_tensor = Tensor::from_slice(&flatten_input).view([1, 10]).to_kind(tch::Kind::Float);
+
     let input_ivalue = IValue::Tensor(input_tensor);
     let output_tensor = no_grad(|| model.forward_is(&[input_ivalue])).unwrap();
 
