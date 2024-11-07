@@ -10,7 +10,8 @@ Build Docker container.
 ./scripts/build.sh
 ```
 
-Create model in container and run server
+Create model in container and run server. Training data is downloaded from [Kaggle](https://www.kaggle.com/competitions/titanic).
+Put downloaded dataset under `/app/src/python-model/dataset/`
 
 ```console
 ./scripts/run.sh
