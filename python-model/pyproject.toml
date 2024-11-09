@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "black>=24.10.0",
-    "flake8>=7.1.1",
-    "ipython>=8.29.0",
-]
+dev = ["black>=24.10.0", "flake8>=7.1.1", "ipython>=8.29.0", "ruff>=0.7.3"]
+
+[tool.ruff]
+select = ["I", "N"] # "I"はisort, "N"はpep8-naming
+ignore = ["E", "F"] # "E"はpycodestyleのError, "F"はPyflakes
