@@ -1,23 +1,26 @@
+from loguru import logger
 import polars as pl
+from sklearn.metrics import accuracy_score
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
 
 
 class TitanicModel(nn.Module):
     def __init__(self):
         super(TitanicModel, self).__init__()
-        self.fc1 = nn.Linear(10, 10)
-        self.leaky_relu1 = nn.LeakyReLU()
-        self.dropout = nn.Dropout(0.25)
-        self.fc2 = nn.Linear(10, 2)
+        self.fc1 = nn.Linear(10, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 2)
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        x = self.leaky_relu1(self.dropout(self.fc1(x)))
-        x = self.fc2(x)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+
         x = self.softmax(x)
 
         return x
@@ -33,7 +36,6 @@ class TitanicDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
-
 
 if __name__ == "__main__":
     df = pl.read_csv("dataset/titanic/train.csv")
@@ -60,15 +62,22 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TitanicModel().to(device)
-    print(model)
-    print(device)
+    logger.info(model)
+    logger.info(f"Training Device: {device}")
+
+    best_acc = 0.0
+    non_improved_cnt = 0
 
     for epoch in range(100):
+        if non_improved_cnt > 10:
+            logger.info(f"Early Stopping! Best accuracy: {best_acc}")
+            break
+
         model.train()
-        for X_batch, y_batch in tqdm(train_dl):
+        for X_batch, y_batch in train_dl:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
 
-            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+            optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
             criterion = nn.CrossEntropyLoss()
 
             optimizer.zero_grad()
@@ -78,6 +87,11 @@ if __name__ == "__main__":
             optimizer.step()
 
         model.eval()
+        total_loss = 0
+        counter = 0
+
+        preds = []
+        gts = []
         with torch.no_grad():
             for X_batch, y_batch in valid_dl:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
@@ -85,7 +99,23 @@ if __name__ == "__main__":
                 y_pred = model(X_batch)
                 loss = criterion(y_pred, y_batch.long())
 
-                print(f"Epoch: {epoch}, Loss: {loss}")
+                preds += y_pred.argmax(dim=1).tolist()
+                gts += y_batch.tolist()
+
+                total_loss += loss.item()
+                counter += 1
+        
+        loss_num = total_loss / counter
+        acc = accuracy_score(gts, preds)
+
+        if acc < best_acc:
+            non_improved_cnt += 1
+        else:
+            non_improved_cnt = 0
+
+        best_acc = max(best_acc, acc)
+        
+        logger.info(f"Epoch: {epoch}, Loss: {loss_num}, Accuracy: {acc}")
 
     jit_model = torch.jit.script(model)
     jit_model.save("model.pt")
