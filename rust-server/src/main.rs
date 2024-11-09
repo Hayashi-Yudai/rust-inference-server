@@ -92,7 +92,7 @@ fn predict_by_torch_model(input: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Box<dyn
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(ping).service(predict_titanic_survival))
-        .bind(("127.0.0.1", 8080))?
+        .bind(("0.0.0.0", 8080))?
         .run()
         .await
 }
