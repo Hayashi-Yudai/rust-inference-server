@@ -27,9 +27,25 @@ class TitanicModel(nn.Module):
 
 
 class TitanicDataset(Dataset):
-    def __init__(self, X, y):
-        self.X = X
-        self.y = y
+    def __init__(self, df: pl.DataFrame):
+        self.df = self._preprocess(df)
+        
+        self.X = torch.Tensor(self.df.drop("Survived").to_numpy())
+        self.y = torch.Tensor(self.df["Survived"].to_numpy())
+    
+    def _preprocess(self, df: pl.DataFrame) -> pl.DataFrame:
+        df = df.select("Survived", "Pclass", "Sex", "Age", "SibSp", "Parch", "Embarked")
+        numerical = df.select("Pclass", "Age", "SibSp", "Parch", "Survived").with_columns(
+            Pclass=pl.col("Pclass") / 3,
+            Age=pl.col("Age").fill_null(0.5) / 100,
+            SibSp=pl.col("SibSp") / 8,
+            Parch=pl.col("Parch") / 6,
+        )
+        categorical = df.select("Sex", "Embarked").to_dummies()
+
+        df = pl.concat([numerical, categorical], how="horizontal")
+        
+        return df
 
     def __len__(self):
         return len(self.X)
@@ -39,26 +55,14 @@ class TitanicDataset(Dataset):
 
 if __name__ == "__main__":
     df = pl.read_csv("dataset/titanic/train.csv")
-    df = df.select("Survived", "Pclass", "Sex", "Age", "SibSp", "Parch", "Embarked")
-    numerical = df.select("Pclass", "Age", "SibSp", "Parch", "Survived").with_columns(
-        Pclass=pl.col("Pclass") / 3,
-        Age=pl.col("Age").fill_null(0.5) / 100,
-        SibSp=pl.col("SibSp") / 8,
-        Parch=pl.col("Parch") / 6,
-    )
-    categorical = df.select("Sex", "Embarked").to_dummies()
+    train_df = df.head(int(df.height * 0.8))
+    valid_df = df.tail(int(df.height * 0.2))
 
-    df = pl.concat([numerical, categorical], how="horizontal")
-    print(df.head())
-
-    X = torch.Tensor(df.drop("Survived").to_numpy())
-    y = torch.Tensor(df["Survived"].to_numpy())
-
-    train_ds = TitanicDataset(X[: int(len(X) * 0.8)], y[: int(len(y) * 0.8)])
-    valid_ds = TitanicDataset(X[int(len(X) * 0.8) :], y[int(len(X) * 0.8) :])
+    train_ds = TitanicDataset(train_df)
+    valid_ds = TitanicDataset(valid_df)
 
     train_dl = DataLoader(train_ds, batch_size=32, shuffle=True)
-    valid_dl = DataLoader(valid_ds, batch_size=128, shuffle=True)
+    valid_dl = DataLoader(valid_ds, batch_size=128, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TitanicModel().to(device)
