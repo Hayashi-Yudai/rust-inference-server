@@ -1,6 +1,7 @@
-import torch
 import io
+
 import polars as pl
+import torch
 
 torch.jit.load("model.pt")
 

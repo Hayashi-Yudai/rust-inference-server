@@ -1,9 +1,9 @@
-from loguru import logger
 import polars as pl
-from sklearn.metrics import accuracy_score
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from loguru import logger
+from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader, Dataset
 
 
