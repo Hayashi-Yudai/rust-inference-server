@@ -1,6 +1,7 @@
 use actix_web::{get, post, web, App, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
-use tch::{no_grad, Device, IValue, Tensor};
+use tch::{no_grad, Device, IValue, Tensor, CModule};
+use std::sync::LazyLock;
 
 #[derive(Serialize, Deserialize)]
 struct ResponseObj {
@@ -17,6 +18,12 @@ struct TitanicInputData {
     parch: i64,
     embarked: String,
 }
+
+static MODEL: LazyLock<CModule> = LazyLock::new(|| {
+    let device = Device::cuda_if_available();
+    println!("Device: {:?}", device);
+    CModule::load_on_device("/app/src/python-model/model.pt", device).unwrap()
+});
 
 #[get("/ping")]
 async fn ping() -> impl Responder {
@@ -68,15 +75,11 @@ fn preprocess_input_date(item: TitanicInputData) -> Vec<Vec<f64>> {
 }
 
 fn predict_by_torch_model(input: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Box<dyn std::error::Error>> {
-    let device = Device::cuda_if_available();
-    println!("Device: {:?}", device);
-    let model = tch::CModule::load_on_device("/app/src/python-model/model.pt", device)?;
-
     let flatten_input: Vec<f64> = input.into_iter().flatten().collect();
     let input_tensor = Tensor::from_slice(&flatten_input).view([1, 10]).to_kind(tch::Kind::Float);
 
     let input_ivalue = IValue::Tensor(input_tensor);
-    let output_tensor = no_grad(|| model.forward_is(&[input_ivalue])).unwrap();
+    let output_tensor = no_grad(|| MODEL.forward_is(&[input_ivalue])).unwrap();
 
     match output_tensor {
         IValue::Tensor(t) => {
