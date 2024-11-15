@@ -67,8 +67,10 @@ fn preprocess_input_date(item: TitanicInputData) -> Vec<Vec<f64>> {
         input_data[6] = 1.0;
     } else if item.embarked == "Q" {
         input_data[7] = 1.0;
-    } else {
+    } else if item.embarked == "S" {
         input_data[8] = 1.0;
+    } else {
+        input_data[9] = 1.0;
     }
 
     vec![input_data]
