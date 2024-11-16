@@ -1,8 +1,0 @@
-{
-    "pclass": 5,
-    "age": 25,
-    "sibsp": 4,
-    "parch": 8,
-    "sex": "male",
-    "embarked": "Q"
-}
