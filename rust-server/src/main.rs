@@ -21,7 +21,7 @@ struct TitanicInputData {
 
 static MODEL: LazyLock<CModule> = LazyLock::new(|| {
     let device = Device::cuda_if_available();
-    println!("Device: {:?}", device);
+    // println!("Device: {:?}", device);
     CModule::load_on_device("/app/src/python-model/model.pt", device).unwrap()
 });
 
@@ -30,7 +30,7 @@ async fn ping() -> impl Responder {
     "Pong!"
 }
 
-#[post("/json")]
+#[post("/predict")]
 async fn predict_titanic_survival(item: web::Json<TitanicInputData>) -> impl Responder {
     let input_value = preprocess_input_date(item.into_inner());
     let output_value = predict_by_torch_model(input_value).unwrap();

@@ -30,7 +30,7 @@ class TitanInputData(BaseModel):
             resp += [1, 0, 0, 0]
         elif self.embarked == 'Q':
             resp += [0, 1, 0, 0]
-        elif self.emberked == 'S':
+        elif self.embarked == 'S':
             resp += [0, 0, 1, 0]
         else:
             resp += [0, 0, 0, 1]
@@ -41,14 +41,14 @@ class TitanInputData(BaseModel):
 async def root():
     return {"message": "Pong"}
 
-@app.post('/json')
+@app.post('/predict')
 async def predict(input_data: TitanInputData):
     input_tensor = input_data.to_tensor()
     result = model(input_tensor).cpu().detach().numpy()[0]
 
     if result[0] > result[1]:
         message = "Died"
-        probabity = float(result[0])
+        probability = float(result[0])
     else:
         message = "Survived"
         probability = float(result[1])
